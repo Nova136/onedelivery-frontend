@@ -1,0 +1,19 @@
+.place-order-card {
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.place-order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.place-order-success {
+  margin: 0;
+  color: var(--success);
+  font-weight: 500;
+}

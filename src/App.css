@@ -9,6 +9,8 @@
   border-right: 1px solid var(--border);
   padding: 1.25rem 0;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-brand {
@@ -29,16 +31,24 @@
 .badge {
   font-size: 0.7rem;
   padding: 0.15rem 0.5rem;
-  background: var(--accent-dim);
   color: var(--bg);
   border-radius: 4px;
   font-weight: 600;
+}
+
+.badge-admin {
+  background: var(--accent-dim);
+}
+
+.badge-customer {
+  background: var(--success);
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
 }
 
 .nav-item {
@@ -60,6 +70,35 @@
   border-left: 3px solid var(--accent);
   padding-left: calc(1.25rem - 3px);
   text-decoration: none;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-user {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-logout {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-logout:hover {
+  background: var(--surface-hover);
+  color: var(--text);
 }
 
 .main {
@@ -110,6 +149,11 @@
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
+}
+
+.card-cta .card-value {
+  font-size: 1.1rem;
+  color: var(--accent);
 }
 
 .table-wrap {
