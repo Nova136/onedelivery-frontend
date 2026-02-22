@@ -17,6 +17,7 @@ function AppLayout() {
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-brand">
+          <img src={`${import.meta.env.BASE_URL}delivery-icon.png`} alt="" className="sidebar-icon" />
           <span className="logo">OneDelivery</span>
           <span className={`badge ${isAdmin ? 'badge-admin' : 'badge-customer'}`}>
             {isAdmin ? 'Admin' : 'Customer'}

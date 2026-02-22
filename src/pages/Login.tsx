@@ -27,6 +27,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
+        <img src={`${import.meta.env.BASE_URL}delivery-icon.png`} alt="OneDelivery" className="login-icon" />
         <h1 className="login-title">OneDelivery</h1>
         <p className="login-subtitle">Sign in to continue</p>
         <form onSubmit={handleSubmit} className="login-form">
@@ -58,7 +59,7 @@ export default function Login() {
           </button>
         </form>
         <p className="login-hint">
-          Demo: admin / admin123 — customer / customer123
+          Demo: admin / admin — customer / customer
         </p>
       </div>
     </div>

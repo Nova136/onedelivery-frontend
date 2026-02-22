@@ -22,6 +22,13 @@
   gap: 0.5rem;
 }
 
+.sidebar-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 .logo {
   font-weight: 700;
   font-size: 1.125rem;

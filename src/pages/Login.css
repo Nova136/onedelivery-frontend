@@ -16,6 +16,14 @@
   padding: 2rem;
 }
 
+.login-icon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  object-fit: contain;
+}
+
 .login-title {
   margin: 0;
   font-size: 1.5rem;
