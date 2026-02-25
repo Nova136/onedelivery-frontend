@@ -1,62 +1,101 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import {
+  loginApi,
+  registerApi,
+  setAuthToken,
+  clearAuthToken,
+  getAuthToken,
+  type LoginDto,
+  type RegisterDto,
+} from '../api/auth'
 
 export type Role = 'admin' | 'customer'
 
 export interface User {
-  username: string
+  email: string
   role: Role
   displayName: string
 }
 
-// Hardcoded credentials (for demo only)
-const USERS: { username: string; password: string; role: Role; displayName: string }[] = [
-  { username: 'admin', password: 'admin', role: 'admin', displayName: 'Admin' },
-  { username: 'customer', password: 'customer', role: 'customer', displayName: 'Customer' },
-]
+function mapRole(role: string | undefined): Role {
+  if (role === 'Admin') return 'admin'
+  return 'customer'
+}
 
 interface AuthContextValue {
   user: User | null
-  login: (username: string, password: string) => boolean
+  loading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  register: (dto: RegisterDto) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+const USER_STORAGE_KEY = 'onedelivery_user'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = sessionStorage.getItem('onedelivery_user')
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const loadUser = useCallback(async () => {
+    const token = getAuthToken()
+    if (!token) {
+      setUser(null)
+      setLoading(false)
+      return
+    }
+    const stored = sessionStorage.getItem(USER_STORAGE_KEY)
     if (stored) {
       try {
-        return JSON.parse(stored) as User
+        const u = JSON.parse(stored) as User
+        setUser(u)
       } catch {
-        return null
+        setUser(null)
       }
+    } else {
+      setUser(null)
     }
-    return null
-  })
+    setLoading(false)
+  }, [])
 
-  const login = useCallback((username: string, password: string): boolean => {
-    const u = USERS.find(
-      (x) => x.username === username && x.password === password
-    )
-    if (!u) return false
-    const userData: User = {
-      username: u.username,
-      role: u.role,
-      displayName: u.displayName,
+  useEffect(() => {
+    loadUser()
+  }, [loadUser])
+
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    const dto: LoginDto = { email: email.trim(), password }
+    try {
+      const res = await loginApi(dto)
+      const token = res.accessToken ?? res.token
+      if (!token) throw new Error('No token in response')
+      setAuthToken(token)
+      const u: User = {
+        email: res.email ?? email.trim(),
+        role: mapRole(res.role),
+        displayName: ((res.email ?? email.trim()).split('@')[0]) || (res.email ?? email.trim()),
+      }
+      setUser(u)
+      sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(u))
+      return true
+    } catch {
+      return false
     }
-    setUser(userData)
-    sessionStorage.setItem('onedelivery_user', JSON.stringify(userData))
-    return true
+  }, [])
+
+  const register = useCallback(async (dto: RegisterDto) => {
+    await registerApi(dto)
+    // Optionally auto-login after register; for now caller can redirect to login
   }, [])
 
   const logout = useCallback(() => {
+    clearAuthToken()
     setUser(null)
-    sessionStorage.removeItem('onedelivery_user')
+    sessionStorage.removeItem(USER_STORAGE_KEY)
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

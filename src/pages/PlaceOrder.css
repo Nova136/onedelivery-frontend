@@ -17,3 +17,74 @@
   color: var(--success);
   font-weight: 500;
 }
+
+.place-order-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.place-order-lines-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.place-order-add-btn {
+  padding: 0.35rem 0.75rem;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.place-order-add-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.place-order-add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.place-order-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.place-order-select {
+  flex: 1;
+  min-width: 120px;
+}
+
+.place-order-qty {
+  width: 4rem;
+}
+
+.place-order-subtotal {
+  min-width: 4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.place-order-remove {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.place-order-remove:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}

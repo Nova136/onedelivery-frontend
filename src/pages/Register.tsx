@@ -1,17 +1,17 @@
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import type { RegisterDto } from '../api/auth'
 import './Login.css'
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState<RegisterDto['role']>('User')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { login } = useAuth()
+  const { register } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -20,13 +20,17 @@ export default function Login() {
       setError('Please enter email and password')
       return
     }
+    if (password.length < 1) {
+      setError('Password is required')
+      return
+    }
     setSubmitting(true)
     try {
-      const ok = await login(email.trim(), password)
-      if (ok) navigate(from, { replace: true })
-      else setError('Invalid email or password')
-    } catch {
-      setError('Login failed. Please try again.')
+      const dto: RegisterDto = { email: email.trim(), password, role }
+      await register(dto)
+      navigate('/login', { state: { registered: true } })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setSubmitting(false)
     }
@@ -37,7 +41,7 @@ export default function Login() {
       <div className="login-card">
         <img src={`${import.meta.env.BASE_URL}delivery-icon.png`} alt="OneDelivery" className="login-icon" />
         <h1 className="login-title">OneDelivery</h1>
-        <p className="login-subtitle">Sign in to continue</p>
+        <p className="login-subtitle">Create an account</p>
         <form onSubmit={handleSubmit} className="login-form">
           <label className="login-label">
             Email
@@ -54,20 +58,31 @@ export default function Login() {
             Password
             <input
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="login-input"
               placeholder="••••••••"
             />
           </label>
+          <label className="login-label">
+            Role
+            <select
+              value={role}
+              onChange={(e) => setRole((e.target.value as RegisterDto['role']) || 'User')}
+              className="login-input"
+            >
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </label>
           {error && <p className="login-error">{error}</p>}
           <button type="submit" className="login-button" disabled={submitting}>
-            {submitting ? 'Signing in…' : 'Sign in'}
+            {submitting ? 'Registering…' : 'Register'}
           </button>
         </form>
         <p className="login-hint">
-          Don’t have an account? <Link to="/register">Register</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

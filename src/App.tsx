@@ -2,11 +2,13 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Orders from './pages/Orders'
 import PlaceOrder from './pages/PlaceOrder'
 import Deliveries from './pages/Deliveries'
 import Drivers from './pages/Drivers'
+import Products from './pages/Products'
 import './App.css'
 
 function AppLayout() {
@@ -32,6 +34,9 @@ function AppLayout() {
               <NavLink to="/orders" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 All orders
               </NavLink>
+              <NavLink to="/products" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+                Products
+              </NavLink>
               <NavLink to="/deliveries" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 Deliveries
               </NavLink>
@@ -47,6 +52,9 @@ function AppLayout() {
               <NavLink to="/orders" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 My orders
               </NavLink>
+              <NavLink to="/products" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+                Products
+              </NavLink>
             </>
           )}
         </nav>
@@ -61,6 +69,7 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/products" element={<Products />} />
           <Route
             path="/order"
             element={
@@ -99,6 +108,10 @@ function App() {
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to="/" replace /> : <Register />}
       />
       <Route
         path="/*"

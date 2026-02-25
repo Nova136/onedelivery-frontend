@@ -1,3 +1,4 @@
+import { getAuthToken } from './auth'
 import { API_BASE_URL, API_ROUTES } from './config'
 
 type RouteKey = keyof typeof API_ROUTES
@@ -28,8 +29,10 @@ export async function apiRequest<T = unknown>(
   const opts = (typeof subpathOrOptions === 'object' ? subpathOrOptions : options) ?? {}
   const url = apiPath(route, subpath)
   const { body, ...init } = opts
+  const token = getAuthToken()
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...opts.headers,
   }
   const res = await fetch(url, {

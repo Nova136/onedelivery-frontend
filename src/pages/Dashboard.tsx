@@ -1,25 +1,26 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useOrders } from '../contexts/OrdersContext'
-import { useMemo } from 'react'
+import { listMyOrdersApi } from '../api/order'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { orders } = useOrders()
+  const [orderCount, setOrderCount] = useState<number | null>(null)
 
-  const myOrderCount = useMemo(() => {
-    if (!user || user.role !== 'customer') return 0
-    return orders.filter((o) => o.customerId === user.username).length
-  }, [user, orders])
+  useEffect(() => {
+    listMyOrdersApi()
+      .then((data) => setOrderCount(data.length))
+      .catch(() => setOrderCount(0))
+  }, [])
 
   const isAdmin = user?.role === 'admin'
 
   if (isAdmin) {
     const stats = [
-      { label: 'Orders today', value: String(orders.length), link: '/orders' },
+      { label: 'My orders', value: orderCount !== null ? String(orderCount) : '—', link: '/orders' },
       { label: 'Active deliveries', value: '8', link: '/deliveries' },
       { label: 'Drivers online', value: '5', link: '/drivers' },
-      { label: 'Completed today', value: '16', link: '/deliveries' },
+      { label: 'Products', value: '—', link: '/products' },
     ]
     return (
       <>
@@ -52,7 +53,7 @@ export default function Dashboard() {
         </Link>
         <Link to="/orders" className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
           <p className="card-title">My orders</p>
-          <p className="card-value">{myOrderCount}</p>
+          <p className="card-value">{orderCount !== null ? orderCount : '—'}</p>
         </Link>
       </div>
     </>

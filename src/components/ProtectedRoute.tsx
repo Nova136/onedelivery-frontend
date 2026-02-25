@@ -8,8 +8,16 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const location = useLocation()
+
+  if (loading) {
+    return (
+      <div className="auth-loading" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+        Loading…
+      </div>
+    )
+  }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
