@@ -13,4 +13,5 @@ export const API_ROUTES = {
   payment: '/payment',
   audit: '/audit',
   user: '/user',
+  incidents: '/incidents',
 } as const

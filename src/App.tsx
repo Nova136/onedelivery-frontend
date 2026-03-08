@@ -9,6 +9,7 @@ import PlaceOrder from './pages/PlaceOrder'
 import Deliveries from './pages/Deliveries'
 import Drivers from './pages/Drivers'
 import Products from './pages/Products'
+import Incidents from './pages/Incidents'
 import './App.css'
 
 function AppLayout() {
@@ -42,6 +43,9 @@ function AppLayout() {
               </NavLink>
               <NavLink to="/drivers" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 Drivers
+              </NavLink>
+              <NavLink to="/incidents" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+                Incidents
               </NavLink>
             </>
           ) : (
@@ -91,6 +95,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Drivers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/incidents"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Incidents />
               </ProtectedRoute>
             }
           />
