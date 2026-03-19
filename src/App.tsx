@@ -10,6 +10,7 @@ import Deliveries from './pages/Deliveries'
 import Drivers from './pages/Drivers'
 import Products from './pages/Products'
 import Incidents from './pages/Incidents'
+import ChatOverlay from './components/ChatOverlay'
 import './App.css'
 
 function AppLayout() {
@@ -108,6 +109,7 @@ function AppLayout() {
           />
         </Routes>
       </main>
+      <ChatOverlay />
     </div>
   )
 }

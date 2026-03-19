@@ -21,6 +21,17 @@ export interface CreateOrderRequestDto {
   priorityOption?: string
 }
 
+/** Line item returned in GET /order/orders */
+export interface OrderItemDto {
+  id: string
+  orderId: string
+  productId: string
+  productName: string
+  quantityOrdered: number
+  quantityRefunded: number
+  price: number
+}
+
 /** Order list item (GET /order/orders response) */
 export interface OrderListItemDto {
   orderId: string
@@ -30,7 +41,10 @@ export interface OrderListItemDto {
   priorityOption?: string
   transactionId?: string
   createdAt?: string
-  items?: Array<{ productId: string; quantity: number; price: number }>
+  items?: OrderItemDto[]
+  totalOrderValue?: number
+  totalRefundValue?: number
+  refundStatus?: string
   [key: string]: unknown
 }
 

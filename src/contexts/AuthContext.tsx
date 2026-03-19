@@ -12,6 +12,7 @@ import {
 export type Role = 'admin' | 'customer'
 
 export interface User {
+  id: string
   email: string
   role: Role
   displayName: string
@@ -49,11 +50,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const u = JSON.parse(stored) as User
-        setUser(u)
+        if (!u.id) {
+          clearAuthToken()
+          sessionStorage.removeItem(USER_STORAGE_KEY)
+          setUser(null)
+        } else {
+          setUser(u)
+        }
       } catch {
+        clearAuthToken()
+        sessionStorage.removeItem(USER_STORAGE_KEY)
         setUser(null)
       }
     } else {
+      clearAuthToken()
       setUser(null)
     }
     setLoading(false)
@@ -71,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!token) throw new Error('No token in response')
       setAuthToken(token)
       const u: User = {
+        id: res.userId ?? '',
         email: res.email ?? email.trim(),
         role: mapRole(res.role),
         displayName: ((res.email ?? email.trim()).split('@')[0]) || (res.email ?? email.trim()),
@@ -92,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthToken()
     setUser(null)
     sessionStorage.removeItem(USER_STORAGE_KEY)
+    sessionStorage.removeItem('onedelivery_chat_session')
   }, [])
 
   return (
