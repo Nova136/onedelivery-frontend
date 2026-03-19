@@ -6,28 +6,45 @@
 
 import { apiGet, apiPost } from './client'
 
-/** Line item for create order (OrderItemInputDto) */
+/** Line item for create order */
 export interface OrderItemInputDto {
   productId: string
+  productName: string
   quantity: number
   price: number
 }
 
-/** Create order request body (CreateOrderRequestDto) */
+/** Create order request body (CreateOrderDto) */
 export interface CreateOrderRequestDto {
   items: OrderItemInputDto[]
   deliveryAddress: string
+  priorityOption?: string
 }
 
-/** Order list item (GET /order response – shape may vary by backend) */
+/** Order list item (GET /order/orders response) */
 export interface OrderListItemDto {
-  id: string
-  deliveryAddress?: string
-  items?: Array<{ productId: string; quantity: number; price: number }>
+  orderId: string
   status?: string
+  customerId?: string
+  deliveryAddress?: string
+  priorityOption?: string
+  transactionId?: string
   createdAt?: string
-  total?: number
+  items?: Array<{ productId: string; quantity: number; price: number }>
   [key: string]: unknown
+}
+
+/** Delivery priority option (GET /order/priority-options) */
+export interface PriorityOption {
+  sku: string
+  name: string
+  description: string
+  price: number
+}
+
+/** GET logistics/priority-options – available delivery speeds */
+export async function listPriorityOptionsApi(): Promise<PriorityOption[]> {
+  return apiGet<PriorityOption[]>('logistics', '/priority-options')
 }
 
 /** POST order/send-order – submit new order (Bearer required) */
@@ -37,10 +54,14 @@ export async function createOrderApi(body: CreateOrderRequestDto): Promise<void>
 
 /** GET order/orders – list orders for current user (Bearer required) */
 export async function listMyOrdersApi(): Promise<OrderListItemDto[]> {
-  const res = await apiGet<OrderListItemDto[] | { data?: OrderListItemDto[] }>('order', '/orders')
+  const res = await apiGet<
+    OrderListItemDto[] | { orders?: OrderListItemDto[]; data?: OrderListItemDto[] }
+  >('order', '/orders')
   if (Array.isArray(res)) return res
-  if (res && typeof res === 'object' && Array.isArray((res as { data?: OrderListItemDto[] }).data)) {
-    return (res as { data: OrderListItemDto[] }).data
+  if (res && typeof res === 'object') {
+    const obj = res as { orders?: OrderListItemDto[]; data?: OrderListItemDto[] }
+    if (Array.isArray(obj.orders)) return obj.orders
+    if (Array.isArray(obj.data)) return obj.data
   }
   return []
 }

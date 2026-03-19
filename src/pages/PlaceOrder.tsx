@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listProductsApi, type ProductItemDto } from '../api/logistics'
-import { createOrderApi, type OrderItemInputDto } from '../api/order'
+import { createOrderApi, listPriorityOptionsApi, type OrderItemInputDto, type PriorityOption } from '../api/order'
 import './PlaceOrder.css'
 
 interface LineItem {
@@ -16,6 +16,8 @@ export default function PlaceOrder() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [products, setProducts] = useState<ProductItemDto[]>([])
+  const [priorityOptions, setPriorityOptions] = useState<PriorityOption[]>([])
+  const [selectedPriority, setSelectedPriority] = useState<string>('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [lines, setLines] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,8 +25,15 @@ export default function PlaceOrder() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    listProductsApi(1, 100)
-      .then((res) => setProducts(res.data.filter((p) => p.active)))
+    Promise.all([
+      listProductsApi(1, 100).then((res) => res.data.filter((p) => p.active)),
+      listPriorityOptionsApi().catch(() => [] as PriorityOption[]),
+    ])
+      .then(([activeProducts, priorities]) => {
+        setProducts(activeProducts)
+        setPriorityOptions(priorities)
+        if (priorities.length > 0) setSelectedPriority(priorities[0].sku)
+      })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false))
   }, [])
@@ -61,13 +70,22 @@ export default function PlaceOrder() {
       setError('Add at least one item')
       return
     }
+    if (priorityOptions.length > 0 && !selectedPriority) {
+      setError('Select a delivery priority')
+      return
+    }
     const items: OrderItemInputDto[] = lines.map((l) => ({
       productId: l.productId,
-      quantity: l.quantity,
-      price: l.price,
+      productName: l.productName,
+      quantity: Math.max(1, Math.round(Number(l.quantity))),
+      price: Number(l.price),
     }))
     setSubmitting(true)
-    createOrderApi({ items, deliveryAddress: deliveryAddress.trim() })
+    createOrderApi({
+      items,
+      deliveryAddress: deliveryAddress.trim(),
+      ...(selectedPriority ? { priorityOption: selectedPriority } : {}),
+    })
       .then(() => navigate('/orders'))
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Order failed')
@@ -105,6 +123,31 @@ export default function PlaceOrder() {
               placeholder="e.g. 123 Main St, City"
             />
           </label>
+
+          {priorityOptions.length > 0 && (
+            <fieldset className="place-order-priority">
+              <legend>Delivery priority *</legend>
+              <div className="place-order-priority-options">
+                {priorityOptions.map((opt) => (
+                  <label
+                    key={opt.sku}
+                    className={`place-order-priority-card${selectedPriority === opt.sku ? ' selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={opt.sku}
+                      checked={selectedPriority === opt.sku}
+                      onChange={() => setSelectedPriority(opt.sku)}
+                    />
+                    <span className="priority-name">{opt.name}</span>
+                    <span className="priority-desc">{opt.description}</span>
+                    <span className="priority-price">${Number(opt.price).toFixed(2)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <div className="place-order-lines">
             <div className="place-order-lines-header">
@@ -147,7 +190,7 @@ export default function PlaceOrder() {
           </div>
 
           {error && <p className="login-error">{error}</p>}
-          <button type="submit" className="login-button" disabled={submitting || lines.length === 0}>
+          <button type="submit" className="login-button" disabled={submitting || lines.length === 0 || (priorityOptions.length > 0 && !selectedPriority)}>
             {submitting ? 'Placing order…' : 'Place order'}
           </button>
         </form>

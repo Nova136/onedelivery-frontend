@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { listMyOrdersApi, type OrderListItemDto } from '../api/order'
+import { listMyOrdersApi, listPriorityOptionsApi, type OrderListItemDto, type PriorityOption } from '../api/order'
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return '—'
@@ -20,6 +20,7 @@ function orderTotal(items: OrderListItemDto['items']): string {
 export default function Orders() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<OrderListItemDto[]>([])
+  const [priorityMap, setPriorityMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,9 +28,16 @@ export default function Orders() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listMyOrdersApi()
-      .then((data) => {
-        if (!cancelled) setOrders(data)
+    Promise.all([
+      listMyOrdersApi(),
+      listPriorityOptionsApi().catch(() => [] as PriorityOption[]),
+    ])
+      .then(([data, priorities]) => {
+        if (cancelled) return
+        setOrders(data)
+        const map: Record<string, string> = {}
+        priorities.forEach((p) => { map[p.sku] = p.name })
+        setPriorityMap(map)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -95,6 +103,7 @@ export default function Orders() {
               <tr>
                 <th>Order ID</th>
                 <th>Delivery address</th>
+                <th>Priority</th>
                 <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
@@ -103,9 +112,10 @@ export default function Orders() {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order.id}>
-                  <td><strong>{order.id}</strong></td>
+                <tr key={order.orderId}>
+                  <td><strong>{order.orderId}</strong></td>
                   <td>{order.deliveryAddress ?? '—'}</td>
+                  <td>{order.priorityOption ? (priorityMap[order.priorityOption] ?? order.priorityOption) : '—'}</td>
                   <td>{order.items?.length ?? 0}</td>
                   <td>{orderTotal(order.items)}</td>
                   <td>
