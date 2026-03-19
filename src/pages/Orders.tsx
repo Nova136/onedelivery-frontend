@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { listMyOrdersApi, listPriorityOptionsApi, type OrderListItemDto, type PriorityOption } from '../api/order'
+import './Orders.css'
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return '—'
@@ -11,16 +12,27 @@ function formatDate(iso: string | undefined): string {
   }
 }
 
-function orderTotal(items: OrderListItemDto['items']): string {
-  if (!items?.length) return '—'
-  const sum = items.reduce((s, i) => s + (i.quantity ?? 0) * (i.price ?? 0), 0)
-  return `$${sum.toFixed(2)}`
+interface PriorityInfo { name: string; price: number }
+
+function calcTotal(
+  items: OrderListItemDto['items'],
+  prioritySku: string | undefined,
+  prioMap: Record<string, PriorityInfo>,
+): string {
+  const itemsSum = (items ?? []).reduce(
+    (s, i) => s + (i.quantityOrdered ?? 0) * (i.price ?? 0),
+    0,
+  )
+  const prioPrice = prioritySku ? (prioMap[prioritySku]?.price ?? 0) : 0
+  const total = itemsSum + prioPrice
+  return total > 0 ? `$${total.toFixed(2)}` : '—'
 }
 
 export default function Orders() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<OrderListItemDto[]>([])
-  const [priorityMap, setPriorityMap] = useState<Record<string, string>>({})
+  const [priorityMap, setPriorityMap] = useState<Record<string, PriorityInfo>>({})
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,8 +47,8 @@ export default function Orders() {
       .then(([data, priorities]) => {
         if (cancelled) return
         setOrders(data)
-        const map: Record<string, string> = {}
-        priorities.forEach((p) => { map[p.sku] = p.name })
+        const map: Record<string, PriorityInfo> = {}
+        priorities.forEach((p) => { map[p.sku] = { name: p.name, price: p.price } })
         setPriorityMap(map)
       })
       .catch((err) => {
@@ -111,25 +123,81 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.orderId}>
-                  <td><strong>{order.orderId}</strong></td>
-                  <td>{order.deliveryAddress ?? '—'}</td>
-                  <td>{order.priorityOption ? (priorityMap[order.priorityOption] ?? order.priorityOption) : '—'}</td>
-                  <td>{order.items?.length ?? 0}</td>
-                  <td>{orderTotal(order.items)}</td>
-                  <td>
-                    {order.status ? (
-                      <span className={`status ${String(order.status).toLowerCase().replace(/\s+/g, '-')}`}>
-                        {order.status}
-                      </span>
-                    ) : (
-                      '—'
+              {orders.map((order) => {
+                const isExpanded = expandedId === order.orderId
+                const prioInfo = order.priorityOption ? priorityMap[order.priorityOption] : undefined
+                return (
+                  <Fragment key={order.orderId}>
+                    <tr
+                      className="order-row"
+                      onClick={() => setExpandedId(isExpanded ? null : order.orderId)}
+                    >
+                      <td>
+                        <span className={`expand-chevron${isExpanded ? ' open' : ''}`}>&#9654;</span>
+                        <strong>{order.orderId}</strong>
+                      </td>
+                      <td>{order.deliveryAddress ?? '—'}</td>
+                      <td>{prioInfo?.name ?? order.priorityOption ?? '—'}</td>
+                      <td>{order.items?.length ?? 0}</td>
+                      <td>{calcTotal(order.items, order.priorityOption, priorityMap)}</td>
+                      <td>
+                        {order.status ? (
+                          <span className={`status ${String(order.status).toLowerCase().replace(/\s+/g, '-')}`}>
+                            {order.status}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>{formatDate(order.createdAt)}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="order-detail-row">
+                        <td colSpan={7}>
+                          <div className="order-detail">
+                            {order.items && order.items.length > 0 ? (
+                              <table className="order-items-table">
+                                <thead>
+                                  <tr>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Unit price</th>
+                                    <th>Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {order.items.map((item) => (
+                                    <tr key={item.id}>
+                                      <td>{item.productName}</td>
+                                      <td>{item.quantityOrdered}</td>
+                                      <td>${Number(item.price).toFixed(2)}</td>
+                                      <td>${(item.quantityOrdered * item.price).toFixed(2)}</td>
+                                    </tr>
+                                  ))}
+                                  {prioInfo && (
+                                    <tr className="priority-row">
+                                      <td>{prioInfo.name}</td>
+                                      <td>1</td>
+                                      <td>${Number(prioInfo.price).toFixed(2)}</td>
+                                      <td>${Number(prioInfo.price).toFixed(2)}</td>
+                                    </tr>
+                                  )}
+                                  <tr className="total-row">
+                                    <td colSpan={3}><strong>Total</strong></td>
+                                    <td><strong>{calcTotal(order.items, order.priorityOption, priorityMap)}</strong></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            ) : (
+                              <p className="no-items">No items in this order.</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>{formatDate(order.createdAt)}</td>
-                </tr>
-              ))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>

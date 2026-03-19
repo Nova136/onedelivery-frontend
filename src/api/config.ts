@@ -14,4 +14,5 @@ export const API_ROUTES = {
   audit: '/audit',
   user: '/user',
   incidents: '/incidents',
+  agent: '/orchestrator-agent',
 } as const
