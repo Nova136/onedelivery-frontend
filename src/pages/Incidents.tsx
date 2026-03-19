@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getIncidentsApi, listIncidentsApi, type Incident } from '../api/incidents'
+import { listIncidentsApi, type Incident } from '../api/incidents'
 
 const trendAnalysisData = {
   summary: {
