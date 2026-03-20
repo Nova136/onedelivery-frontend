@@ -53,6 +53,11 @@
   border-bottom: none;
 }
 
+.order-items-table .refund-row td {
+  color: var(--danger);
+  font-style: italic;
+}
+
 .order-items-table .priority-row td {
   color: var(--text-muted);
   font-style: italic;

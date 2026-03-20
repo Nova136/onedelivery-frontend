@@ -23,8 +23,12 @@ function calcTotal(
     (s, i) => s + (i.quantityOrdered ?? 0) * (i.price ?? 0),
     0,
   )
+  const refundSum = (items ?? []).reduce(
+    (s, i) => s + (i.quantityRefunded ?? 0) * (i.price ?? 0),
+    0,
+  )
   const prioPrice = prioritySku ? (prioMap[prioritySku]?.price ?? 0) : 0
-  const total = itemsSum + prioPrice
+  const total = itemsSum - refundSum + prioPrice
   return total > 0 ? `$${total.toFixed(2)}` : '—'
 }
 
@@ -167,12 +171,22 @@ export default function Orders() {
                                 </thead>
                                 <tbody>
                                   {order.items.map((item) => (
-                                    <tr key={item.id}>
-                                      <td>{item.productName}</td>
-                                      <td>{item.quantityOrdered}</td>
-                                      <td>${Number(item.price).toFixed(2)}</td>
-                                      <td>${(item.quantityOrdered * item.price).toFixed(2)}</td>
-                                    </tr>
+                                    <Fragment key={item.id}>
+                                      <tr>
+                                        <td>{item.productName}</td>
+                                        <td>{item.quantityOrdered}</td>
+                                        <td>${Number(item.price).toFixed(2)}</td>
+                                        <td>${(item.quantityOrdered * item.price).toFixed(2)}</td>
+                                      </tr>
+                                      {item.quantityRefunded > 0 && (
+                                        <tr className="refund-row">
+                                          <td>Refund – {item.productName}</td>
+                                          <td>-{item.quantityRefunded}</td>
+                                          <td>${Number(item.price).toFixed(2)}</td>
+                                          <td>-${(item.quantityRefunded * item.price).toFixed(2)}</td>
+                                        </tr>
+                                      )}
+                                    </Fragment>
                                   ))}
                                   {prioInfo && (
                                     <tr className="priority-row">
