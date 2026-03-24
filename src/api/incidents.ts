@@ -60,7 +60,6 @@ export interface TrendAnalysisResponse {
     peakTime: string
     issues: string[]
   }
-  recommendations: string[]
 }
 
 /** GET /incidents/trends – fetch incident trend analysis (Bearer required) */
