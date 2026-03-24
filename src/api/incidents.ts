@@ -52,14 +52,12 @@ export async function listIncidentsApi(): Promise<Incident[]> {
 
 /** Trend analysis response */
 export interface TrendAnalysisResponse {
-  summary: {
-    total: number
+    totalByThisMonth: number
     mostCommon: string
     percentage: number
     trend: string
     peakTime: string
     issues: string[]
-  }
 }
 
 /** GET /incidents/trends – fetch incident trend analysis (Bearer required) */
