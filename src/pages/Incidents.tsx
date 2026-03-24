@@ -1,21 +1,5 @@
 import { useState, useEffect } from 'react'
-import { listIncidentsApi, type Incident } from '../api/incidents'
-
-const trendAnalysisData = {
-  summary: {
-    total: 45,
-    mostCommon: 'MISSING_ITEMS',
-    percentage: 60,
-    trend: '+15% vs previous month',
-    peakTime: '6-8 PM',
-    issues: ['Food items missing from orders', 'Delivery delays']
-  },
-  recommendations: [
-    'Review packaging procedures for food items',
-    'Increase driver training on order verification',
-    'Monitor delivery times during peak hours'
-  ]
-}
+import { getIncidentTrendsApi, listIncidentsApi, TrendAnalysisResponse, type Incident } from '../api/incidents'
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return '—'
@@ -31,7 +15,7 @@ export default function Incidents() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
-  const [summaryText, setSummaryText] = useState(trendAnalysisData)
+  const [summaryText, setSummaryText] = useState<TrendAnalysisResponse | null>(null)
 
   useEffect(() => {
     fetchIncidents()
@@ -52,11 +36,28 @@ export default function Incidents() {
         }
         console.log('Fetched incidents:', incidents)
         console.log('Fetched loadings:', loading)
-    }
+  }
+  
+  const fetchAnalysis = async () => {
+        try {
+        setError(null)
+        const data = await getIncidentTrendsApi()
+        setSummaryText(data || null)
+        setShowSummary(true)
+        } catch (err) {
+        console.error('Failed to fetch incidents:', err)
+        setError('Failed to load incidents. Please try again.')
+        setSummaryText(null)
+        setShowSummary(false)
+        } finally {
+        setShowSummary(true)
+        }
+        console.log('Fetched analysis:', summaryText)
+        console.log('Fetched showSummary:', showSummary)
+  }
 
   const handleAnalyzeTrends = () => {
-    setSummaryText(trendAnalysisData)
-    setShowSummary(true)
+    fetchAnalysis()
   }
 
   const handleCloseSummary = () => {
@@ -195,17 +196,6 @@ export default function Incidents() {
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
                 {summaryText.summary.issues.map((issue, idx) => (
                   <li key={idx} style={{ color: '#555', marginBottom: '5px' }}>{issue}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {summaryText.recommendations && summaryText.recommendations.length > 0 && (
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>💡 Recommendations</div>
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {summaryText.recommendations.map((rec, idx) => (
-                  <li key={idx} style={{ color: '#555', marginBottom: '5px' }}>{rec}</li>
                 ))}
               </ul>
             </div>
