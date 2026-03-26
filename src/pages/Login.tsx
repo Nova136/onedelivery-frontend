@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import './Login.css'
 
@@ -34,6 +34,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <NavLink to="/sonar" className="login-scan-status">Scan status</NavLink>
       <div className="login-card">
         <img src={`${import.meta.env.BASE_URL}delivery-icon.png`} alt="OneDelivery" className="login-icon" />
         <h1 className="login-title">OneDelivery</h1>

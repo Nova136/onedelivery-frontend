@@ -271,3 +271,70 @@
 .modal-content button:hover {
   background: var(--accent-dim);
 }
+
+/* SonarCloud backend scans */
+.sonar-banner {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.sonar-banner-error {
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px solid rgba(248, 81, 73, 0.35);
+  color: var(--danger);
+}
+
+.sonar-table-wrap {
+  overflow-x: auto;
+}
+
+.sonar-table-wrap table {
+  min-width: 960px;
+  font-size: 0.875rem;
+}
+
+.sonar-table-wrap th,
+.sonar-table-wrap td {
+  white-space: nowrap;
+}
+
+.sonar-table-wrap td:first-child {
+  white-space: normal;
+  min-width: 140px;
+}
+
+.sonar-service-name {
+  display: block;
+  font-weight: 600;
+}
+
+.sonar-service-id {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sonar-badge-cell {
+  vertical-align: middle;
+}
+
+.sonar-badge-link {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.sonar-badge-link img {
+  display: block;
+  height: 20px;
+  width: auto;
+  max-width: 100px;
+}
+
+.sonar-metric-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}

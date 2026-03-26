@@ -10,6 +10,7 @@ import Deliveries from './pages/Deliveries'
 import Drivers from './pages/Drivers'
 import Products from './pages/Products'
 import Incidents from './pages/Incidents'
+import SonarScans from './pages/SonarScans'
 import ChatOverlay from './components/ChatOverlay'
 import './App.css'
 
@@ -127,6 +128,7 @@ function App() {
         path="/register"
         element={user ? <Navigate to="/" replace /> : <Register />}
       />
+      <Route path="/sonar" element={<SonarScans />} />
       <Route
         path="/*"
         element={
