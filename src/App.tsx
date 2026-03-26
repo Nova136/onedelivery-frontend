@@ -49,9 +49,6 @@ function AppLayout() {
               <NavLink to="/incidents" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 Incidents
               </NavLink>
-              <NavLink to="/sonar" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
-                Sonar scans
-              </NavLink>
             </>
           ) : (
             <>
@@ -111,14 +108,6 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/sonar"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <SonarScans />
-              </ProtectedRoute>
-            }
-          />
         </Routes>
       </main>
       <ChatOverlay />
@@ -139,6 +128,7 @@ function App() {
         path="/register"
         element={user ? <Navigate to="/" replace /> : <Register />}
       />
+      <Route path="/sonar" element={<SonarScans />} />
       <Route
         path="/*"
         element={
