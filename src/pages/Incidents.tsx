@@ -132,7 +132,7 @@ export default function Incidents() {
           Analyze Trends
         </button>
       </div>
-      {showSummary && (
+      {showSummary && summaryText && (
         <div style={{
           position: 'fixed',
           bottom: 0,
