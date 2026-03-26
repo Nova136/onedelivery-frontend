@@ -10,6 +10,7 @@ import Deliveries from './pages/Deliveries'
 import Drivers from './pages/Drivers'
 import Products from './pages/Products'
 import Incidents from './pages/Incidents'
+import SonarScans from './pages/SonarScans'
 import ChatOverlay from './components/ChatOverlay'
 import './App.css'
 
@@ -47,6 +48,9 @@ function AppLayout() {
               </NavLink>
               <NavLink to="/incidents" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                 Incidents
+              </NavLink>
+              <NavLink to="/sonar" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+                Sonar scans
               </NavLink>
             </>
           ) : (
@@ -104,6 +108,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Incidents />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sonar"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <SonarScans />
               </ProtectedRoute>
             }
           />
