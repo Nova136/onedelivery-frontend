@@ -1,21 +1,5 @@
 import { useState, useEffect } from 'react'
-import { listIncidentsApi, type Incident } from '../api/incidents'
-
-const trendAnalysisData = {
-  summary: {
-    total: 45,
-    mostCommon: 'MISSING_ITEMS',
-    percentage: 60,
-    trend: '+15% vs previous month',
-    peakTime: '6-8 PM',
-    issues: ['Food items missing from orders', 'Delivery delays']
-  },
-  recommendations: [
-    'Review packaging procedures for food items',
-    'Increase driver training on order verification',
-    'Monitor delivery times during peak hours'
-  ]
-}
+import { getIncidentTrendsApi, listIncidentsApi, TrendAnalysisResponse, type Incident } from '../api/incidents'
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return '—'
@@ -31,7 +15,7 @@ export default function Incidents() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
-  const [summaryText, setSummaryText] = useState(trendAnalysisData)
+  const [summaryText, setSummaryText] = useState<TrendAnalysisResponse | null>(null)
 
   useEffect(() => {
     fetchIncidents()
@@ -52,11 +36,27 @@ export default function Incidents() {
         }
         console.log('Fetched incidents:', incidents)
         console.log('Fetched loadings:', loading)
-    }
+  }
+  
+  const fetchAnalysis = async () => {
+        try {
+        setError(null)
+        const data = await getIncidentTrendsApi()
+        setSummaryText(data || null)
+        } catch (err) {
+        console.error('Failed to fetch incidents:', err)
+        setError('Failed to load incidents. Please try again.')
+        setSummaryText(null)
+        setShowSummary(false)
+        } finally {
+        setShowSummary(true)
+        }
+        console.log('Fetched analysis:', summaryText)
+        console.log('Fetched showSummary:', showSummary)
+  }
 
   const handleAnalyzeTrends = () => {
-    setSummaryText(trendAnalysisData)
-    setShowSummary(true)
+    fetchAnalysis()
   }
 
   const handleCloseSummary = () => {
@@ -132,7 +132,7 @@ export default function Incidents() {
           Analyze Trends
         </button>
       </div>
-      {showSummary && (
+      {showSummary && summaryText && (
         <div style={{
           position: 'fixed',
           bottom: 0,
@@ -166,46 +166,35 @@ export default function Incidents() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
             <div style={{ backgroundColor: '#f0f7ff', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #007bff' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>Total Incidents</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#007bff' }}>{summaryText.summary?.total || 0}</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#007bff' }}>{summaryText.totalByThisMonth || 0}</div>
               <div style={{ fontSize: '12px', color: '#999' }}>Last 30 days</div>
             </div>
             
             <div style={{ backgroundColor: '#fff3f0', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #ff6b6b' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>Most Common Issue</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff6b6b' }}>{summaryText.summary?.mostCommon}</div>
-              <div style={{ fontSize: '12px', color: '#999' }}>{summaryText.summary?.percentage}% of incidents</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff6b6b' }}>{summaryText.mostCommon}</div>
+              <div style={{ fontSize: '12px', color: '#999' }}>{summaryText.percentage}% of incidents</div>
             </div>
             
             <div style={{ backgroundColor: '#f0fdf4', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #22c55e' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>Trend</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#22c55e' }}>{summaryText.summary?.trend}</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#22c55e' }}>{summaryText.trend}</div>
               <div style={{ fontSize: '12px', color: '#999' }}>vs previous month</div>
             </div>
             
             <div style={{ backgroundColor: '#fffbf0', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #f59e0b' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>Peak Time</div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b' }}>{summaryText.summary?.peakTime}</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b' }}>{summaryText.peakTime}</div>
               <div style={{ fontSize: '12px', color: '#999' }}>Highest incident rate</div>
             </div>
           </div>
           
-          {summaryText.summary?.issues && summaryText.summary.issues.length > 0 && (
+          {summaryText.issues && summaryText.issues.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>⚠️ Common Issues</div>
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {summaryText.summary.issues.map((issue, idx) => (
+                {summaryText.issues.map((issue, idx) => (
                   <li key={idx} style={{ color: '#555', marginBottom: '5px' }}>{issue}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {summaryText.recommendations && summaryText.recommendations.length > 0 && (
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>💡 Recommendations</div>
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {summaryText.recommendations.map((rec, idx) => (
-                  <li key={idx} style={{ color: '#555', marginBottom: '5px' }}>{rec}</li>
                 ))}
               </ul>
             </div>
