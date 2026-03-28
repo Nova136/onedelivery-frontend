@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { getAuthToken } from '../api/auth'
 import {
   getHistoryListingApi,
   getChatHistoryApi,
-  sendChatMessageApi,
   type ChatSession,
   type ChatMessage,
 } from '../api/agent'
@@ -11,9 +11,7 @@ import './ChatOverlay.css'
 
 const CHAT_SESSION_KEY = 'onedelivery_chat_session'
 
-function generateSessionId(): string {
-  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws'
 
 function loadPersistedSessionId(): string | null {
   return sessionStorage.getItem(CHAT_SESSION_KEY) || null
@@ -43,8 +41,13 @@ export default function ChatOverlay() {
 
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [wsError, setWsError] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  // Holds the sessionId to use when opening the next WS connection.
+  // Updated synchronously before state changes so the effect reads the right value.
+  const wsSessionIdRef = useRef<string | null>(loadPersistedSessionId())
 
   const userId = user?.id ?? ''
 
@@ -54,7 +57,72 @@ export default function ChatOverlay() {
     }
   }, [user, logout])
 
-  // Restore chat history when reopening with a persisted session
+  // Manage the WebSocket connection whenever the chat view is active.
+  // activeSessionId is intentionally excluded from deps — the connection must not
+  // restart just because the server returns a new sessionId mid-session.
+  useEffect(() => {
+    if (!open || view !== 'chat') {
+      wsRef.current?.close()
+      wsRef.current = null
+      return
+    }
+
+    const token = getAuthToken()
+    if (!token) return
+
+    const url = new URL(WS_BASE_URL)
+    url.searchParams.set('token', token)
+    const sid = wsSessionIdRef.current
+    if (sid) url.searchParams.set('sessionId', sid)
+
+    const ws = new WebSocket(url.toString())
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data as string)
+
+      if (data.ack) {
+        // Message queued — typing indicator is already shown via `sending` state
+        return
+      }
+
+      if (data.error) {
+        setWsError(data.error)
+        setSending(false)
+        return
+      }
+
+      if (data.reply) {
+        if (data.sessionId) {
+          wsSessionIdRef.current = data.sessionId
+          setActiveSessionId(data.sessionId)
+          persistSessionId(data.sessionId)
+        }
+        setMessages((prev) => [...prev, { type: 'ai', content: data.reply }])
+        setSending(false)
+      }
+    }
+
+    ws.onerror = () => {
+      setWsError('Connection error. Please try again.')
+      setSending(false)
+    }
+
+    ws.onclose = (event) => {
+      if (event.code === 4001) {
+        setWsError('Authentication failed. Please log in again.')
+      }
+      wsRef.current = null
+    }
+
+    return () => {
+      ws.close()
+      wsRef.current = null
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, view])
+
+  // Restore chat history over HTTP when reopening a persisted session
   useEffect(() => {
     if (open && view === 'chat' && activeSessionId && userId) {
       setMessagesLoading(true)
@@ -82,10 +150,12 @@ export default function ChatOverlay() {
   }, [messages])
 
   function selectSession(sessionId: string) {
+    wsSessionIdRef.current = sessionId
     setActiveSessionId(sessionId)
     persistSessionId(sessionId)
     setView('chat')
     setMessages([])
+    setWsError(null)
     setMessagesLoading(true)
     getChatHistoryApi(userId, sessionId)
       .then(setMessages)
@@ -94,41 +164,43 @@ export default function ChatOverlay() {
   }
 
   function startNewChat() {
-    const newId = generateSessionId()
-    setActiveSessionId(newId)
-    persistSessionId(newId)
+    wsSessionIdRef.current = null
+    setActiveSessionId(null)
+    persistSessionId(null)
     setMessages([])
+    setWsError(null)
     setView('chat')
   }
 
   function goBack() {
+    wsRef.current?.close()
+    wsRef.current = null
+    wsSessionIdRef.current = null
     setView('sessions')
     setActiveSessionId(null)
     persistSessionId(null)
     setMessages([])
+    setWsError(null)
   }
 
-  async function handleSend(e: FormEvent) {
+  function handleSend(e: FormEvent) {
     e.preventDefault()
     const text = input.trim()
-    if (!text || !activeSessionId || sending) return
+    if (!text || sending) return
+
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      setWsError('Not connected. Please wait and try again.')
+      return
+    }
 
     const userMsg: ChatMessage = { type: 'human', content: text }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setSending(true)
+    setWsError(null)
 
-    try {
-      const reply = await sendChatMessageApi(userId, activeSessionId, text)
-      setMessages((prev) => [...prev, { type: 'ai', content: reply }])
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { type: 'ai', content: 'Sorry, something went wrong. Please try again.' },
-      ])
-    } finally {
-      setSending(false)
-    }
+    ws.send(JSON.stringify({ action: 'sendMessage', message: text, sessionId: activeSessionId }))
   }
 
   if (!user) return null
@@ -210,6 +282,7 @@ export default function ChatOverlay() {
                     <span className="dot" />
                   </div>
                 )}
+                {wsError && <p className="chat-error">{wsError}</p>}
                 <div ref={bottomRef} />
               </div>
 

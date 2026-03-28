@@ -65,22 +65,3 @@ export async function getChatHistoryApi(
   return []
 }
 
-/** POST agent/chat – send a chat message and get the agent's reply */
-export async function sendChatMessageApi(
-  userId: string,
-  sessionId: string,
-  message: string,
-): Promise<string> {
-  const body: HandleIncomingMessageDto = { userId, sessionId, message }
-  const res = await apiPost<string | { message?: string; response?: string; reply?: string }>(
-    'agent',
-    body,
-    '/chat',
-  )
-  if (typeof res === 'string') return res
-  if (res && typeof res === 'object') {
-    const obj = res as { message?: string; response?: string; reply?: string }
-    return obj.response ?? obj.reply ?? obj.message ?? ''
-  }
-  return ''
-}
