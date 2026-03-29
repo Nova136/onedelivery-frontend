@@ -9,16 +9,8 @@ type RouteKey = keyof typeof API_ROUTES;
  * by the backend or reverse proxy.
  */
 export function apiPath(route: RouteKey, subpath = ""): string {
-    let baseUrl = API_BASE_URL;
-    if (route === "agent") baseUrl = "http://localhost:3010";
-    else if (route === "incidents") baseUrl = "http://localhost:3006";
-    else if (route === "user") baseUrl = "http://localhost:3005";
-    else if (route === "logistics") baseUrl = "http://localhost:3002";
-    else if (route === "order") baseUrl = "http://localhost:3003";
-    else if (route === "payment") baseUrl = "http://localhost:3004";
-    else if (route === "audit") baseUrl = "http://localhost:3001";
     const path = `${API_ROUTES[route]}${subpath}`.replace(/\/+/g, "/");
-    return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+    return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {

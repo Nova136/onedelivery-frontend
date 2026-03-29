@@ -11,7 +11,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 const CHAT_SESSION_KEY = "onedelivery_chat_session";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "http://localhost:3010/ws";
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "http://localhost:8000/ws";
 
 function loadPersistedSessionId(): string | null {
     return sessionStorage.getItem(CHAT_SESSION_KEY) || null;
@@ -44,6 +44,7 @@ export default function ChatOverlay() {
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
     const [wsError, setWsError] = useState<string | null>(null);
+    const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const socketRef = useRef<Socket | null>(null);
@@ -83,7 +84,7 @@ export default function ChatOverlay() {
         });
 
         socket.on("message", (data) => {
-            if (data.type === "CHAT_RESPONSE") {
+            if (data.type === "CHAT_RESPONSE" || data.type === "AGENT_UPDATE") {
                 // The server is authoritative for the response content.
                 const { message } = data;
                 setMessages((prev) => [
@@ -98,7 +99,9 @@ export default function ChatOverlay() {
         });
 
         socket.on("connect_error", (err) => {
-            setWsError(`Connection error: ${err.message}. Please try again.`);
+            // This is for initial connection errors.
+            // Reconnection attempts are handled by 'reconnect_error' and 'reconnect_failed'.
+            setWsError(`Connection error: ${err.message}.`);
             setSending(false);
         });
 
@@ -110,12 +113,17 @@ export default function ChatOverlay() {
             socketRef.current = null;
         });
 
+        socket.on("reconnect_failed", () => {
+            setWsError("Failed to reconnect to the chat service.");
+            setSending(false);
+        });
+
         return () => {
             socket.disconnect();
             socketRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, view]);
+    }, [open, view, reconnectAttempt]);
 
     // Restore chat history over HTTP when reopening a persisted session
     useEffect(() => {
@@ -177,6 +185,12 @@ export default function ChatOverlay() {
         persistSessionId(null);
         setMessages([]);
         setWsError(null);
+    }
+
+    function handleManualReconnect() {
+        setWsError(null);
+        setSending(true); // Show a "connecting..." like state
+        setReconnectAttempt((c) => c + 1);
     }
 
     function handleSend(e: FormEvent) {
@@ -306,7 +320,20 @@ export default function ChatOverlay() {
                                     </div>
                                 )}
                                 {wsError && (
-                                    <p className="chat-error">{wsError}</p>
+                                    <div className="chat-error">
+                                        {wsError}
+                                        {wsError.includes(
+                                            "Failed to reconnect",
+                                        ) && (
+                                            <button
+                                                type="button"
+                                                className="chat-reconnect-btn"
+                                                onClick={handleManualReconnect}
+                                            >
+                                                Try Again
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                                 <div ref={bottomRef} />
                             </div>
