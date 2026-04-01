@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
     getHistoryListingApi,
     getChatHistoryApi,
+    sendChatMessageApi,
     type ChatSession,
     type ChatMessage,
 } from "../api/agent";
@@ -11,7 +12,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 const CHAT_SESSION_KEY = "onedelivery_chat_session";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "http://localhost:8000/ws";
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "http://localhost:3010/ws";
 
 function loadPersistedSessionId(): string | null {
     return sessionStorage.getItem(CHAT_SESSION_KEY) || null;
@@ -84,14 +85,14 @@ export default function ChatOverlay() {
         });
 
         socket.on("message", (data) => {
-            if (data.type === "CHAT_RESPONSE" || data.type === "AGENT_UPDATE") {
-                // The server is authoritative for the response content.
+            // The primary chat response is now handled via the HTTP API response.
+            // This listener is for other real-time events, like errors or future updates.
+            if (data.type === "AGENT_UPDATE") {
                 const { message } = data;
                 setMessages((prev) => [
                     ...prev,
                     { type: "ai", content: String(message) },
                 ]);
-                setSending(false);
             } else if (data.type === "ERROR") {
                 setWsError(data.message ?? "An unknown error occurred.");
                 setSending(false);
@@ -193,28 +194,59 @@ export default function ChatOverlay() {
         setReconnectAttempt((c) => c + 1);
     }
 
-    function handleSend(e: FormEvent) {
+    async function handleSend(e: FormEvent) {
         e.preventDefault();
         const text = input.trim();
         if (!text || sending) return;
 
-        const socket = socketRef.current;
-        if (!socket || !socket.connected) {
-            setWsError("Not connected. Please wait and try again.");
+        if (!activeSessionId) {
+            setWsError("No active chat session. Please start a new chat.");
             return;
         }
 
-        const userMsg: ChatMessage = { type: "human", content: text };
+        const socket = socketRef.current;
+        if (!socket || !socket.connected) {
+            setWsError(
+                "Not connected to receive messages. Please wait and try again.",
+            );
+            return;
+        }
+
+        const tempId = crypto.randomUUID();
+        const userMsg: ChatMessage = {
+            id: tempId,
+            type: "human",
+            content: text,
+        };
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setSending(true);
         setWsError(null);
 
-        socket.emit("message", {
-            type: "CHAT_MESSAGE",
-            message: text,
-            userId,
-        });
+        try {
+            const reply = await sendChatMessageApi(
+                userId,
+                activeSessionId,
+                text,
+            );
+            if (reply) {
+                const aiMsg: ChatMessage = {
+                    id: crypto.randomUUID(),
+                    type: "ai",
+                    content: reply,
+                };
+                setMessages((prev) => [...prev, aiMsg]);
+            }
+            setSending(false);
+        } catch (err) {
+            setSending(false);
+            setWsError(
+                err instanceof Error ? err.message : "Failed to send message.",
+            );
+            // Revert optimistic UI update
+            setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+            setInput(text); // Restore input
+        }
     }
 
     if (!user) return null;
@@ -306,7 +338,7 @@ export default function ChatOverlay() {
                                 )}
                                 {messages.map((msg, i) => (
                                     <div
-                                        key={i}
+                                        key={msg.id ?? i}
                                         className={`chat-bubble ${msg.type === "human" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
                                     >
                                         {msg.content}
