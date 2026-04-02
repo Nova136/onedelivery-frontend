@@ -200,7 +200,7 @@ export default function ChatOverlay() {
     setSending(true)
     setWsError(null)
 
-    ws.send(JSON.stringify({ action: 'sendMessage', message: text, sessionId: activeSessionId }))
+    ws.send(JSON.stringify({ action: 'sendMessage', token: getAuthToken(), message: text, sessionId: activeSessionId }))
   }
 
   if (!user) return null
