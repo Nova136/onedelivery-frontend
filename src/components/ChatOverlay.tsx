@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
     getHistoryListingApi,
     getChatHistoryApi,
-    sendChatMessageApi,
+    sendUserMessage,
     type ChatSession,
     type ChatMessage,
 } from "../api/agent";
@@ -49,6 +49,7 @@ export default function ChatOverlay() {
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const socketRef = useRef<Socket | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     // Holds the sessionId to use when opening the next WS connection.
     // Updated synchronously before state changes so the effect reads the right value.
     const chatSessionIdRef = useRef<string | null>(loadPersistedSessionId());
@@ -92,6 +93,12 @@ export default function ChatOverlay() {
                 setMessages((prev) => [
                     ...prev,
                     { type: "ai", content: String(message) },
+                ]);
+            } else if (data.type === "ADMIN_UPDATE") {
+                const { message } = data;
+                setMessages((prev) => [
+                    ...prev,
+                    { type: "admin", content: String(message) },
                 ]);
             } else if (data.type === "ERROR") {
                 setWsError(data.message ?? "An unknown error occurred.");
@@ -152,6 +159,18 @@ export default function ChatOverlay() {
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    const adjustTextareaHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        }
+    };
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [input]);
 
     function selectSession(sessionId: string) {
         chatSessionIdRef.current = sessionId;
@@ -224,11 +243,7 @@ export default function ChatOverlay() {
         setWsError(null);
 
         try {
-            const reply = await sendChatMessageApi(
-                userId,
-                activeSessionId,
-                text,
-            );
+            const reply = await sendUserMessage(userId, activeSessionId, text);
             if (reply) {
                 const aiMsg: ChatMessage = {
                     id: crypto.randomUUID(),
@@ -339,7 +354,13 @@ export default function ChatOverlay() {
                                 {messages.map((msg, i) => (
                                     <div
                                         key={msg.id ?? i}
-                                        className={`chat-bubble ${msg.type === "human" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
+                                        className={`chat-bubble ${
+                                            msg.type === "human"
+                                                ? "chat-bubble-user"
+                                                : msg.type === "admin"
+                                                  ? "chat-bubble-admin"
+                                                  : "chat-bubble-assistant"
+                                        }`}
                                     >
                                         {msg.content}
                                     </div>
@@ -374,15 +395,28 @@ export default function ChatOverlay() {
                                 className="chat-input-bar"
                                 onSubmit={handleSend}
                             >
-                                <input
-                                    type="text"
+                                <textarea
+                                    ref={textareaRef}
                                     className="chat-input"
                                     placeholder="Type a message…"
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) =>
+                                        setInput(e.target.value.slice(0, 300))
+                                    }
                                     disabled={sending}
                                     autoFocus
+                                    rows={1}
+                                    style={{
+                                        minHeight: "36px",
+                                        maxHeight: "120px",
+                                        resize: "none",
+                                    }}
                                 />
+                                <div className="chat-input-footer">
+                                    <span className="char-count">
+                                        {input.length}/300
+                                    </span>
+                                </div>
                                 <button
                                     type="submit"
                                     className="chat-send-btn"
