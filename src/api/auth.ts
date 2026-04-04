@@ -57,13 +57,21 @@ export function getAuthToken(): string | null {
     return getToken();
 }
 
+const SERVER_UNREACHABLE =
+    "Unable to reach the server. Please try again later.";
+
 /** POST /user/login */
 export async function loginApi(body: LoginDto): Promise<LoginResponse> {
-    const res = await fetch(`${USER_BASE}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+        res = await fetch(`${USER_BASE}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    } catch {
+        throw new Error(SERVER_UNREACHABLE);
+    }
     if (!res.ok) {
         const text = await res.text();
         throw new Error(text || `Login failed: ${res.status}`);
@@ -75,11 +83,16 @@ export async function loginApi(body: LoginDto): Promise<LoginResponse> {
 
 /** POST /user/register */
 export async function registerApi(body: RegisterDto): Promise<void> {
-    const res = await fetch(`${USER_BASE}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+        res = await fetch(`${USER_BASE}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+    } catch {
+        throw new Error(SERVER_UNREACHABLE);
+    }
     if (!res.ok) {
         const text = await res.text();
         throw new Error(text || `Registration failed: ${res.status}`);
@@ -90,12 +103,17 @@ export async function registerApi(body: RegisterDto): Promise<void> {
 export async function meApi(): Promise<MeResponse> {
     const token = getToken();
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${USER_BASE}/me`, {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+    let res: Response;
+    try {
+        res = await fetch(`${USER_BASE}/me`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    } catch {
+        throw new Error(SERVER_UNREACHABLE);
+    }
     if (!res.ok) {
         if (res.status === 401) {
             clearAuthToken();

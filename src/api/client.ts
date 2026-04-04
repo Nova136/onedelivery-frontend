@@ -38,16 +38,21 @@ export async function apiRequest<T = unknown>(
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...opts.headers,
     };
-    const res = await fetch(url, {
-        ...init,
-        headers,
-        body:
-            body !== undefined
-                ? typeof body === "string"
-                    ? body
-                    : JSON.stringify(body)
-                : undefined,
-    });
+    let res: Response;
+    try {
+        res = await fetch(url, {
+            ...init,
+            headers,
+            body:
+                body !== undefined
+                    ? typeof body === "string"
+                        ? body
+                        : JSON.stringify(body)
+                    : undefined,
+        });
+    } catch {
+        throw new Error("Unable to reach the server. Please try again later.");
+    }
     if (!res.ok) {
         const text = await res.text();
         throw new Error(`API ${res.status}: ${text || res.statusText}`);
