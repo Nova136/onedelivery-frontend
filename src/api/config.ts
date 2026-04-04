@@ -13,6 +13,6 @@ export const API_ROUTES = {
   payment: '/payment',
   audit: '/audit',
   user: '/user',
-  incidents: '/incidents',
+  incident: '/incident',
   agent: '/orchestrator-agent',
 } as const
