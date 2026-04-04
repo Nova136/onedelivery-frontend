@@ -50,6 +50,7 @@ export default function ChatOverlay() {
     const bottomRef = useRef<HTMLDivElement>(null);
     const socketRef = useRef<Socket | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
     // Holds the sessionId to use when opening the next WS connection.
     // Updated synchronously before state changes so the effect reads the right value.
     const chatSessionIdRef = useRef<string | null>(loadPersistedSessionId());
@@ -392,6 +393,7 @@ export default function ChatOverlay() {
                             </div>
 
                             <form
+                                ref={formRef}
                                 className="chat-input-bar"
                                 onSubmit={handleSend}
                             >
@@ -403,6 +405,12 @@ export default function ChatOverlay() {
                                     onChange={(e) =>
                                         setInput(e.target.value.slice(0, 300))
                                     }
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            formRef.current?.requestSubmit();
+                                        }
+                                    }}
                                     disabled={sending}
                                     autoFocus
                                     rows={1}

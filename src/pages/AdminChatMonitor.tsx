@@ -27,6 +27,7 @@ export default function AdminChatMonitor() {
     const [error, setError] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
 
     useEffect(() => {
         if (user?.role === "admin") {
@@ -303,6 +304,7 @@ export default function AdminChatMonitor() {
                         {selectedSession.status?.toLowerCase() ===
                             "escalated" && (
                             <form
+                                ref={formRef}
                                 className="chat-input-bar"
                                 onSubmit={handleSendNewMessage}
                             >
@@ -316,6 +318,12 @@ export default function AdminChatMonitor() {
                                             e.target.value.slice(0, 300),
                                         )
                                     }
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            formRef.current?.requestSubmit();
+                                        }
+                                    }}
                                     disabled={sending}
                                     autoFocus
                                     rows={1}
