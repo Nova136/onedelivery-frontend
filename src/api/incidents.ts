@@ -6,9 +6,7 @@
 import { getAuthToken } from "./auth";
 import { apiGet } from "./client";
 
-const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-    "http://localhost:8000";
+const API_BASE_URL = "http://localhost:3006";
 const BASE = API_BASE_URL.replace(/\/$/, "");
 
 /** Incident response from backend */
