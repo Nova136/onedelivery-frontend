@@ -3,7 +3,9 @@
  * Endpoints: POST /user/login, POST /user/register, GET /user/me
  */
 
-const API_BASE_URL = "http://localhost:3005";
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
+    "http://localhost:8000";
 const USER_BASE = `${API_BASE_URL.replace(/\/$/, "")}/user`;
 
 const AUTH_STORAGE_KEY = "onedelivery_token";
