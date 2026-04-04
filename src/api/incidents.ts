@@ -8,7 +8,7 @@ import { apiGet } from "./client";
 
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-    "http://localhost:8000";
+    "http://localhost:8000/incident";
 const BASE = API_BASE_URL.replace(/\/$/, "");
 
 /** Incident response from backend */
@@ -35,7 +35,7 @@ export async function getIncidentsApi(): Promise<Incident[]> {
  * GET /logistics/products?page=&limit=
  */
 export async function listIncidentsApi(): Promise<Incident[]> {
-    const url = new URL(`${BASE}/incidents`);
+    const url = new URL(`${BASE}`);
     const token = getAuthToken();
     const res = await fetch(url.toString(), {
         method: "GET",
@@ -64,6 +64,6 @@ export interface TrendAnalysisResponse {
 
 /** GET /incidents/trends – fetch incident trend analysis (Bearer required) */
 export async function getIncidentTrendsApi(): Promise<TrendAnalysisResponse> {
-    const res = await apiGet<TrendAnalysisResponse>("incidents", "/trends");
+    const res = await apiGet<TrendAnalysisResponse>("incident", "/trends");
     return res;
 }
