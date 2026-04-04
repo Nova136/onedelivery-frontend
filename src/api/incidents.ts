@@ -27,12 +27,12 @@ export interface IncidentsResponse {
 
 /** GET /incidents – fetch all incidents (Bearer required) */
 export async function getIncidentsApi(): Promise<Incident[]> {
-    const res = await apiGet<IncidentsResponse>("incidents", "");
+    const res = await apiGet<IncidentsResponse>("incident", "");
     return res.incidents || [];
 }
 
 /**
- * GET /logistics/products?page=&limit=
+ * GET /logistics/products?page=&limit=20 by default
  */
 export async function listIncidentsApi(): Promise<Incident[]> {
     const url = new URL(`${BASE}`);
