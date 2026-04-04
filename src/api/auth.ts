@@ -57,7 +57,8 @@ export function getAuthToken(): string | null {
     return getToken();
 }
 
-const SERVER_UNREACHABLE = "Unable to reach the server. Please try again later.";
+const SERVER_UNREACHABLE =
+    "Unable to reach the server. Please try again later.";
 
 /** POST /user/login */
 export async function loginApi(body: LoginDto): Promise<LoginResponse> {

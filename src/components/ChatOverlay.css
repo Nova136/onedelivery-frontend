@@ -148,6 +148,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.chat-messages::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 .chat-bubble {
@@ -172,6 +178,13 @@
   background: var(--surface-hover);
   color: var(--text);
   border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-admin {
+  align-self: flex-end;
+  background: var(--warning);
+  color: #fff;
+  border-bottom-right-radius: 4px;
 }
 
 /* Typing indicator */
@@ -221,6 +234,15 @@
   color: var(--text);
   outline: none;
   transition: border-color 0.15s;
+  line-height: 1.4;
+  font-family: inherit;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.chat-input::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 .chat-input:focus {
@@ -249,4 +271,33 @@
 .chat-send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.chat-input-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.25rem 0.75rem 0.5rem;
+}
+
+.char-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.chat-error {
+    text-align: center;
+    color: #ef4444;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    margin: 0;
+}
+
+.chat-reconnect-btn {
+    margin-left: 8px;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    color: #333;
 }
