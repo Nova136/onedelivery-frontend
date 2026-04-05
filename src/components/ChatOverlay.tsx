@@ -11,7 +11,7 @@ import "./ChatOverlay.css";
 
 const CHAT_SESSION_KEY = "onedelivery_chat_session";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000/ws";
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3015/ws";
 
 function loadPersistedSessionId(): string | null {
     return sessionStorage.getItem(CHAT_SESSION_KEY) || null;
@@ -47,6 +47,8 @@ export default function ChatOverlay() {
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     // Holds the sessionId to use when opening the next WS connection.
     // Updated synchronously before state changes so the effect reads the right value.
     const wsSessionIdRef = useRef<string | null>(loadPersistedSessionId());
@@ -83,6 +85,7 @@ export default function ChatOverlay() {
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data as string);
 
+            console.log("Received WS message:", data);
             if (data.ack) {
                 // Message queued — typing indicator is already shown via `sending` state
                 return;
@@ -100,11 +103,19 @@ export default function ChatOverlay() {
                     setActiveSessionId(data.sessionId);
                     persistSessionId(data.sessionId);
                 }
-                setMessages((prev) => [
-                    ...prev,
-                    { type: "ai", content: data.reply },
-                ]);
-                setSending(false);
+                if (data.responseType === "USER_UPDATE") {
+                    setSending(false);
+                } else if (data.responseType === "AGENT_UPDATE") {
+                    setMessages((prev) => [
+                        ...prev,
+                        { type: "ai", content: data.reply },
+                    ]);
+                } else if (data.responseType === "ADMIN_UPDATE") {
+                    setMessages((prev) => [
+                        ...prev,
+                        { type: "admin", content: data.reply },
+                    ]);
+                }
             }
         };
 
@@ -153,6 +164,14 @@ export default function ChatOverlay() {
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        }
+    }, [input]);
 
     function selectSession(sessionId: string) {
         wsSessionIdRef.current = sessionId;
@@ -305,7 +324,13 @@ export default function ChatOverlay() {
                                 {messages.map((msg, i) => (
                                     <div
                                         key={i}
-                                        className={`chat-bubble ${msg.type === "human" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
+                                        className={`chat-bubble ${
+                                            msg.type === "human"
+                                                ? "chat-bubble-user"
+                                                : msg.type === "admin"
+                                                  ? "chat-bubble-admin"
+                                                  : "chat-bubble-assistant"
+                                        }`}
                                     >
                                         {msg.content}
                                     </div>
@@ -324,18 +349,38 @@ export default function ChatOverlay() {
                             </div>
 
                             <form
+                                ref={formRef}
                                 className="chat-input-bar"
                                 onSubmit={handleSend}
                             >
-                                <input
-                                    type="text"
+                                <textarea
+                                    ref={textareaRef}
                                     className="chat-input"
                                     placeholder="Type a message…"
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) =>
+                                        setInput(e.target.value.slice(0, 300))
+                                    }
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            formRef.current?.requestSubmit();
+                                        }
+                                    }}
                                     disabled={sending}
                                     autoFocus
+                                    rows={1}
+                                    style={{
+                                        minHeight: "36px",
+                                        maxHeight: "120px",
+                                        resize: "none",
+                                    }}
                                 />
+                                <div className="chat-input-footer">
+                                    <span className="char-count">
+                                        {input.length}/300
+                                    </span>
+                                </div>
                                 <button
                                     type="submit"
                                     className="chat-send-btn"

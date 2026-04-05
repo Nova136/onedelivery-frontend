@@ -181,7 +181,7 @@
 }
 
 .chat-bubble-admin {
-  align-self: flex-end;
+  align-self: flex-start;
   background: var(--warning);
   color: #fff;
   border-bottom-right-radius: 4px;
