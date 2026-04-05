@@ -103,11 +103,19 @@ export default function ChatOverlay() {
                     setActiveSessionId(data.sessionId);
                     persistSessionId(data.sessionId);
                 }
-                setMessages((prev) => [
-                    ...prev,
-                    { type: "ai", content: data.reply },
-                ]);
-                setSending(false);
+                if (data.responseType === "USER_UPDATE") {
+                    setSending(false);
+                } else if (data.responseType === "AGENT_UPDATE") {
+                    setMessages((prev) => [
+                        ...prev,
+                        { type: "ai", content: data.reply },
+                    ]);
+                } else if (data.responseType === "ADMIN_UPDATE") {
+                    setMessages((prev) => [
+                        ...prev,
+                        { type: "admin", content: data.reply },
+                    ]);
+                }
             }
         };
 
@@ -316,7 +324,13 @@ export default function ChatOverlay() {
                                 {messages.map((msg, i) => (
                                     <div
                                         key={i}
-                                        className={`chat-bubble ${msg.type === "human" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
+                                        className={`chat-bubble ${
+                                            msg.type === "human"
+                                                ? "chat-bubble-user"
+                                                : msg.type === "admin"
+                                                  ? "chat-bubble-admin"
+                                                  : "chat-bubble-assistant"
+                                        }`}
                                     >
                                         {msg.content}
                                     </div>

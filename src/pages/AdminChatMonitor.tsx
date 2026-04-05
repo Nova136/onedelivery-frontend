@@ -10,7 +10,10 @@ import {
     getSessionDetails,
 } from "../api/agent";
 import { useAuth } from "../contexts/AuthContext";
+import { getAuthToken } from "../api/auth";
 import "./AdminChatMonitor.css";
+
+const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3015/ws";
 
 export default function AdminChatMonitor() {
     const { user } = useAuth();
@@ -28,6 +31,7 @@ export default function AdminChatMonitor() {
     const bottomRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         if (user?.role === "admin") {
@@ -50,6 +54,64 @@ export default function AdminChatMonitor() {
     useEffect(() => {
         adjustTextareaHeight();
     }, [newMessage]);
+
+    useEffect(() => {
+        if (!selectedSession) {
+            wsRef.current?.close();
+            wsRef.current = null;
+            return;
+        }
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        const url = new URL(WS_BASE_URL);
+        url.searchParams.set("token", token);
+        url.searchParams.set("sessionId", selectedSession.sessionId);
+
+        const ws = new WebSocket(url.toString());
+        wsRef.current = ws;
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data as string);
+
+            if (data.ack) return;
+
+            if (data.error) {
+                setError(data.error);
+                return;
+            }
+
+            if (data.reply) {
+                if (data.responseType === "USER_UPDATE") {
+                    setSessionMessages((prev) => [
+                        ...prev,
+                        { type: "human", content: data.reply },
+                    ]);
+                } else if (data.responseType === "AGENT_UPDATE") {
+                    setSessionMessages((prev) => [
+                        ...prev,
+                        { type: "ai", content: data.reply },
+                    ]);
+                } else if (data.responseType === "ADMIN_UPDATE") {
+                    setSending(false);
+                }
+            }
+        };
+
+        ws.onerror = () => {
+            setError("Connection error. Please try again.");
+        };
+
+        ws.onclose = () => {
+            wsRef.current = null;
+        };
+
+        return () => {
+            ws.close();
+            wsRef.current = null;
+        };
+    }, [selectedSession]);
 
     const fetchSessions = async () => {
         setLoading(true);
@@ -105,22 +167,16 @@ export default function AdminChatMonitor() {
 
         try {
             const outgoing = newMessage.trim();
-            const reply = await sendAdminMessage(
+            sendAdminMessage(
                 selectedSession.userId || "",
                 selectedSession.sessionId,
                 outgoing,
             );
-
             setSessionMessages((prev) => [
                 ...prev,
                 {
                     type: "admin",
                     content: outgoing,
-                    createdAt: new Date().toISOString(),
-                },
-                {
-                    type: "ai",
-                    content: reply || "(no response)",
                     createdAt: new Date().toISOString(),
                 },
             ]);
